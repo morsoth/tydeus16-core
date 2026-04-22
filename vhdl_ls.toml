@@ -1,0 +1,5 @@
+[libraries]
+defaultlib.files = [
+  "rtl/**/*.vhd",
+  "tb/**/*.vhd"
+]
