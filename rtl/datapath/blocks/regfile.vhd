@@ -9,14 +9,15 @@ entity regfile is
         clk_i     : in  std_logic;
         rst_i     : in  std_logic;
 
-        -- Read
+        -- Read A
         raddr_a_i : in  reg_idx_t;
-        raddr_b_i : in  reg_idx_t;
-
         rdata_a_o : out data_t;
+
+        -- Read B
+        raddr_b_i : in  reg_idx_t;
         rdata_b_o : out data_t;
 
-        -- Write
+        -- Write D
         waddr_d_i : in  reg_idx_t;
         wdata_d_i : in  data_t;
         we_i      : in  std_logic

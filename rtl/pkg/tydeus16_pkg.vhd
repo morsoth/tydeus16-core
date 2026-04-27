@@ -4,8 +4,8 @@ use ieee.numeric_std.all;
 
 package tydeus16_pkg is
     -- Global widths and sizes
-    constant DATA_WIDTH       : natural := 16;
     constant INSTR_WIDTH      : natural := 16;
+    constant DATA_WIDTH       : natural := 16;
 
     constant INSTR_ADDR_WIDTH : natural := 11;
     constant DATA_ADDR_WIDTH  : natural := 16;
@@ -27,8 +27,8 @@ package tydeus16_pkg is
     constant FUNC_WIDTH       : natural := 2;
 
     -- Common subtypes
-    subtype data_t       is std_logic_vector(DATA_WIDTH-1 downto 0);
     subtype instr_t      is std_logic_vector(INSTR_WIDTH-1 downto 0);
+    subtype data_t       is std_logic_vector(DATA_WIDTH-1 downto 0);
 
     subtype instr_addr_t is std_logic_vector(INSTR_ADDR_WIDTH-1 downto 0);
     subtype data_addr_t  is std_logic_vector(DATA_ADDR_WIDTH-1 downto 0);
@@ -88,16 +88,16 @@ package tydeus16_pkg is
 
     -- Instruction format kind
     type instr_format_t is (
-        NOOP_TYPE,
-        RRR_TYPE,
-        RR_TYPE,
-        RI_TYPE,
-        RRI_TYPE,
-        JUMP_TYPE,
-        BRANCH_TYPE,
-        LOAD_TYPE,
-        STORE_TYPE,
-        UNKNOWN_TYPE
+        FMT_NOOP,
+        FMT_RRR,
+        FMT_RR,
+        FMT_RI,
+        FMT_RRI,
+        FMT_JUMP,
+        FMT_BRANCH,
+        FMT_LOAD,
+        FMT_STORE,
+        FMT_UNKNOWN
     );
 
     -- Instruction semantic kind
@@ -148,6 +148,12 @@ package tydeus16_pkg is
         ALU_B_CONST_1
     );
 
+    -- PC selection
+    type pc_sel_t is (
+        PC_SEL_HOLD,
+        PC_SEL_PLUS_1
+    );
+
     -- Stages
     type state_t is (
         ST_FETCH,
@@ -180,6 +186,28 @@ package tydeus16_pkg is
         addr11 : instr_addr_t;
     end record;
 
+    constant DECODED_INSTR_RESET : decoded_instr_t := (
+        raw       => (others => '0'),
+        kind      => IK_NOP,
+        format    => FMT_NOOP,
+
+        opcode    => OP_NOP,
+        func      => FUNC_MOV,
+
+        dest      => (others => '0'),
+        src_a     => (others => '0'),
+        src_b     => (others => '0'),
+
+        use_src_a => '0',
+        use_src_b => '0',
+
+        imm8      => (others => '0'),
+        imm4      => (others => '0'),
+        off5      => (others => '0'),
+        off11     => (others => '0'),
+        addr11    => (others => '0')
+    );
+
     -- Inter-stage struct
     type fetch_to_decode_t is record
         instr    : instr_t;
@@ -205,10 +233,64 @@ package tydeus16_pkg is
         dest      : reg_idx_t;
     end record;
 
+    constant FETCH_TO_DECODE_RESET : fetch_to_decode_t := (
+        instr => (others => '0')
+    );
+
+    constant DECODE_TO_EXE_RESET : decode_to_exe_t := (
+        dec_instr => DECODED_INSTR_RESET,
+        reg_a     => (others => '0'),
+        reg_b     => (others => '0'),
+        dest      => (others => '0'),
+        alu_op    => ALU_NOP
+    );
+
+    constant EXE_TO_MEM_RESET : exe_to_mem_t := (
+        dec_instr  => DECODED_INSTR_RESET,
+        alu_result => (others => '0'),
+        dest       => (others => '0')
+    );
+
+    constant MEM_TO_WRITEBACK_RESET : mem_to_writeback_t := (
+        dec_instr => DECODED_INSTR_RESET,
+        result    => (others => '0'),
+        dest      => (others => '0')
+    );
+
     -- Control unit signals
     type ctrl_signals_t is record
-        
+        pc_we               : std_logic;
+        pc_sel              : pc_sel_t;
+
+        fetch_to_decode_we  : std_logic;
+        decode_to_exe_we    : std_logic;
+        exe_to_mem_we       : std_logic;
+        mem_to_writeback_we : std_logic;
+
+        regfile_we          : std_logic;
+        flags_we            : std_logic;
+
+        alu_op              : alu_op_t;
+        alu_a_sel           : alu_a_sel_t;
+        alu_b_sel           : alu_b_sel_t;
     end record;
+
+    constant CTRL_SIGNALS_RESET : ctrl_signals_t := (
+        pc_we               => '0',
+        pc_sel              => PC_SEL_HOLD,
+
+        fetch_to_decode_we  => '0',
+        decode_to_exe_we    => '0',
+        exe_to_mem_we       => '0',
+        mem_to_writeback_we => '0',
+
+        regfile_we          => '0',
+        flags_we            => '0',
+
+        alu_op              => ALU_NOP,
+        alu_a_sel           => ALU_A_REGA,
+        alu_b_sel           => ALU_B_REGB
+    );
 
     -- Zero-extension function
     function zext(x : std_logic_vector; size : natural) return std_logic_vector;
