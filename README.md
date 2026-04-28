@@ -1,1 +1,1 @@
-# Tydeus-16 CPU Core
+# Tydeus-16 Core

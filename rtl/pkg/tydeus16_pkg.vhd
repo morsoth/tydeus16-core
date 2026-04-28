@@ -133,7 +133,7 @@ package tydeus16_pkg is
     -- ALU input A selection
     type alu_a_sel_t is (
         ALU_A_REGA,
-        ALU_A_PC,
+        ALU_A_PC_PLUS_1,
         ALU_A_SP
     );
 
@@ -141,7 +141,6 @@ package tydeus16_pkg is
     type alu_b_sel_t is (
         ALU_B_REGB,
         ALU_B_IMM8_ZEXT,
-        ALU_B_IMM8_SEXT,
         ALU_B_IMM4_ZEXT,
         ALU_B_OFF5_SEXT,
         ALU_B_OFF11_SEXT,
@@ -151,7 +150,29 @@ package tydeus16_pkg is
     -- PC selection
     type pc_sel_t is (
         PC_SEL_HOLD,
-        PC_SEL_PLUS_1
+        PC_SEL_PLUS_1,
+        PC_SEL_JMP_ADDR,
+        PC_SEL_B_ADDR,
+        PC_SEL_CALL_ADDR,
+        PC_SEL_RET_ADDR
+    );
+
+    -- SP selection
+    type sp_sel_t is (
+        SP_SEL_HOLD,
+        SP_SEL_EXE_ADDR
+    );
+
+    -- Data memory data selection
+    type dmem_wdata_sel_t is (
+        DMEM_WDATA_REGB,
+        DMEM_WDATA_PC
+    );
+
+    -- Write-back selection
+    type wb_sel_t is (
+        WB_SEL_EXE,
+        WB_SEL_MEM
     );
 
     -- Stages
@@ -210,43 +231,50 @@ package tydeus16_pkg is
 
     -- Inter-stage struct
     type fetch_to_decode_t is record
-        instr    : instr_t;
+        instr     : instr_t;
+        pc_plus_1 : instr_addr_t;
     end record;
 
     type decode_to_exe_t is record
         dec_instr : decoded_instr_t;
+        pc_plus_1 : instr_addr_t;
         reg_a     : data_t;
         reg_b     : data_t;
         dest      : reg_idx_t;
-        alu_op    : alu_op_t;
     end record;
 
     type exe_to_mem_t is record
-        dec_instr    : decoded_instr_t;
-        alu_result   : data_t;
-        dest         : reg_idx_t;
+        dec_instr  : decoded_instr_t;
+        pc_plus_1  : instr_addr_t;
+        reg_b      : data_t;
+        alu_result : data_t;
+        dest       : reg_idx_t;
     end record;
 
     type mem_to_writeback_t is record
         dec_instr : decoded_instr_t;
         result    : data_t;
         dest      : reg_idx_t;
+        mem_rdata : data_t;
     end record;
 
     constant FETCH_TO_DECODE_RESET : fetch_to_decode_t := (
-        instr => (others => '0')
+        instr => (others => '0'),
+        pc_plus_1 => (others => '0')
     );
 
     constant DECODE_TO_EXE_RESET : decode_to_exe_t := (
         dec_instr => DECODED_INSTR_RESET,
+        pc_plus_1 => (others => '0'),
         reg_a     => (others => '0'),
         reg_b     => (others => '0'),
-        dest      => (others => '0'),
-        alu_op    => ALU_NOP
+        dest      => (others => '0')
     );
 
     constant EXE_TO_MEM_RESET : exe_to_mem_t := (
         dec_instr  => DECODED_INSTR_RESET,
+        pc_plus_1 => (others => '0'),
+        reg_b      => (others => '0'),
         alu_result => (others => '0'),
         dest       => (others => '0')
     );
@@ -254,13 +282,22 @@ package tydeus16_pkg is
     constant MEM_TO_WRITEBACK_RESET : mem_to_writeback_t := (
         dec_instr => DECODED_INSTR_RESET,
         result    => (others => '0'),
-        dest      => (others => '0')
+        dest      => (others => '0'),
+        mem_rdata => (others => '0')
     );
+
+    constant PC_RESET    : instr_addr_t := (others => '0');
+    constant SP_RESET    : data_addr_t  := (others => '1');
+    constant FLAGS_RESET : flags_t      := (others => '0');
+
 
     -- Control unit signals
     type ctrl_signals_t is record
         pc_we               : std_logic;
         pc_sel              : pc_sel_t;
+
+        sp_we               : std_logic;
+        sp_sel              : sp_sel_t;
 
         fetch_to_decode_we  : std_logic;
         decode_to_exe_we    : std_logic;
@@ -273,11 +310,19 @@ package tydeus16_pkg is
         alu_op              : alu_op_t;
         alu_a_sel           : alu_a_sel_t;
         alu_b_sel           : alu_b_sel_t;
+
+        dmem_wdata_sel      : dmem_wdata_sel_t;
+        dmem_we             : std_logic;
+
+        wb_sel              : wb_sel_t;
     end record;
 
     constant CTRL_SIGNALS_RESET : ctrl_signals_t := (
         pc_we               => '0',
         pc_sel              => PC_SEL_HOLD,
+
+        sp_we               => '0',
+        sp_sel              => SP_SEL_HOLD,
 
         fetch_to_decode_we  => '0',
         decode_to_exe_we    => '0',
@@ -289,7 +334,12 @@ package tydeus16_pkg is
 
         alu_op              => ALU_NOP,
         alu_a_sel           => ALU_A_REGA,
-        alu_b_sel           => ALU_B_REGB
+        alu_b_sel           => ALU_B_REGB,
+
+        dmem_wdata_sel      => DMEM_WDATA_REGB,
+        dmem_we             => '0',
+
+        wb_sel              => WB_SEL_EXE
     );
 
     -- Zero-extension function
