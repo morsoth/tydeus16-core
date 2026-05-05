@@ -38,7 +38,7 @@ begin
     rdata_b_o <= (others => '0') when unsigned(raddr_b_i) = 0
                 else regs(to_integer(unsigned(raddr_b_i)));
 
-    process(clk_i, rst_i)
+    process(clk_i)
     begin
         if rising_edge(clk_i) then
             -- Reset

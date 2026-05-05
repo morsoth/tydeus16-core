@@ -86,11 +86,8 @@ begin
                     when IK_BEQ | IK_BNE | IK_BLT | IK_BGT | IK_BLE | IK_BGE =>
                         state_d <= ST_FETCH;
 
-                    when IK_LOAD | IK_STORE | IK_CALL | IK_RET =>
-                        state_d <= ST_MEMORY;
-
                     when others =>
-                        state_d <= ST_WRITEBACK;
+                        state_d <= ST_MEMORY;
                 end case;
 
             when ST_MEMORY =>
@@ -218,7 +215,7 @@ begin
                         ctrl_o.alu_b_sel <= ALU_B_IMM4_ZEXT;
                         ctrl_o.flags_we  <= '1';
 
-                    -- Branchs
+                    -- Branches
                     when IK_BEQ | IK_BNE | IK_BLT | IK_BGT | IK_BLE | IK_BGE =>
                         ctrl_o.exe_to_mem_we <= '0';
 
@@ -228,7 +225,7 @@ begin
                         
                         if branch_taken(decode_to_exe_i.dec_instr.kind, flags_i) = '1' then
                             ctrl_o.pc_we  <= '1';
-                            ctrl_o.pc_sel <= PC_SEL_B_ADDR;
+                            ctrl_o.pc_sel <= PC_SEL_BRANCH_ADDR;
                         end if;
 
                     -- CALL
@@ -237,17 +234,11 @@ begin
                         ctrl_o.alu_a_sel <= ALU_A_SP;
                         ctrl_o.alu_b_sel <= ALU_B_CONST_1;
 
-                        ctrl_o.sp_we  <= '1';
-                        ctrl_o.sp_sel <= SP_SEL_EXE_ADDR;
-
                     -- RET
                     when IK_RET =>
                         ctrl_o.alu_op    <= ALU_ADD;
                         ctrl_o.alu_a_sel <= ALU_A_SP;
                         ctrl_o.alu_b_sel <= ALU_B_CONST_1;
-
-                        ctrl_o.sp_we  <= '1';
-                        ctrl_o.sp_sel <= SP_SEL_EXE_ADDR;
 
                     -- Memory
                     when IK_LOAD | IK_STORE =>
@@ -262,31 +253,44 @@ begin
                 ctrl_o.mem_to_writeback_we <= '1';
 
                 case exe_to_mem_i.dec_instr.kind is
+                    -- CALL
                     when IK_CALL =>
                         ctrl_o.mem_to_writeback_we <= '0';
 
+                        ctrl_o.dmem_addr_sel  <= DMEM_ADDR_EXE;
                         ctrl_o.dmem_wdata_sel <= DMEM_WDATA_PC;
                         ctrl_o.dmem_we        <= '1';
 
                         ctrl_o.pc_we  <= '1';
                         ctrl_o.pc_sel <= PC_SEL_CALL_ADDR;
 
+                        ctrl_o.sp_we  <= '1';
+                        ctrl_o.sp_sel <= SP_SEL_EXE_ADDR;
+
+                    -- RET
                     when IK_RET =>
                         ctrl_o.mem_to_writeback_we <= '0';
 
-                        ctrl_o.dmem_wdata_sel <= DMEM_WDATA_PC;
+                        ctrl_o.dmem_addr_sel  <= DMEM_ADDR_RET;
                         ctrl_o.dmem_we        <= '0';
 
                         ctrl_o.pc_we  <= '1';
                         ctrl_o.pc_sel <= PC_SEL_RET_ADDR;
 
+                        ctrl_o.sp_we  <= '1';
+                        ctrl_o.sp_sel <= SP_SEL_EXE_ADDR;
+
+                    -- LOAD
                     when IK_LOAD =>
+                        ctrl_o.dmem_addr_sel  <= DMEM_ADDR_EXE;
                         ctrl_o.dmem_wdata_sel <= DMEM_WDATA_REGB;
                         ctrl_o.dmem_we        <= '0';
 
+                    -- STORE
                     when IK_STORE =>
                         ctrl_o.mem_to_writeback_we <= '0';
 
+                        ctrl_o.dmem_addr_sel  <= DMEM_ADDR_EXE;
                         ctrl_o.dmem_wdata_sel <= DMEM_WDATA_REGB;
                         ctrl_o.dmem_we        <= '1';
 
@@ -297,12 +301,14 @@ begin
                 ctrl_o.regfile_we <= '0';
 
                 case mem_to_writeback_i.dec_instr.kind is
+                    -- Arithmetic, logic and shifts
                     when IK_MOV | IK_ADD | IK_SUB | IK_ADDI | IK_SUBI |
                          IK_AND | IK_OR  | IK_XOR | IK_NOT |
                          IK_LI  | IK_LIH | IK_SLL | IK_SRL | IK_SRA =>
                         ctrl_o.regfile_we <= '1';
                         ctrl_o.wb_sel     <= WB_SEL_EXE;
 
+                    -- LOAD
                     when IK_LOAD =>
                         ctrl_o.regfile_we <= '1';
                         ctrl_o.wb_sel     <= WB_SEL_MEM;

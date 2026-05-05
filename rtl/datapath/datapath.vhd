@@ -31,7 +31,7 @@ entity datapath is
 end entity datapath;
 
 architecture rtl of datapath is
-    -- Inter-stage regiters
+    -- Inter-stage registers
     signal fetch_to_decode_d, fetch_to_decode_q   : fetch_to_decode_t;
     signal decode_to_exe_d, decode_to_exe_q       : decode_to_exe_t;
     signal exe_to_mem_d, exe_to_mem_q             : exe_to_mem_t;
@@ -48,7 +48,8 @@ architecture rtl of datapath is
     -- Regfile
     signal rf_rdata_a : data_t;
     signal rf_rdata_b : data_t;
-    signal rf_wdata : data_t;
+    signal rf_waddr   : reg_idx_t;
+    signal rf_wdata   : data_t;
 
     -- ALU
     signal alu_a      : data_t;
@@ -79,7 +80,7 @@ begin
             raddr_b_i  => dec_instr.src_b,
             rdata_b_o  => rf_rdata_b,
 
-            waddr_d_i  => exe_to_mem_q.dest,
+            waddr_d_i  => rf_waddr,
             wdata_d_i  => rf_wdata,
             we_i       => ctrl_i.regfile_we
         );
@@ -96,7 +97,6 @@ begin
 
     -- Default Outputs
     imem_addr_o  <= pc_reg_q;
-    dmem_addr_o  <= exe_to_mem_q.alu_result;
     dmem_we_o    <= ctrl_i.dmem_we;
 
     -- Fetch Stage
@@ -116,9 +116,10 @@ begin
 
         decode_to_exe_d.dec_instr <= dec_instr;
         decode_to_exe_d.pc_plus_1 <= fetch_to_decode_q.pc_plus_1;
+        decode_to_exe_d.sp        <= sp_reg_q;
         decode_to_exe_d.reg_a     <= rf_rdata_a;
         decode_to_exe_d.reg_b     <= rf_rdata_b;
-        decode_to_exe_d.dest      <= dec_instr.dest;
+        decode_to_exe_d.rf_dest   <= dec_instr.dest;
 
     end process;
 
@@ -128,22 +129,21 @@ begin
         exe_to_mem_d            <= EXE_TO_MEM_RESET;
 
         exe_to_mem_d.dec_instr  <= decode_to_exe_q.dec_instr;
-        exe_to_mem_d.pc_plus_1 <= decode_to_exe_q.pc_plus_1;
-        exe_to_mem_d.reg_b      <= decode_to_exe_q.reg_b;
-        exe_to_mem_d.alu_result <= exe_result;
-        exe_to_mem_d.dest       <= decode_to_exe_q.dest;
-
-        flags_reg_d <= alu_flags;
+        exe_to_mem_d.pc_plus_1  <= decode_to_exe_q.pc_plus_1;
+        exe_to_mem_d.sp         <= decode_to_exe_q.sp;
+        exe_to_mem_d.rf_dest    <= decode_to_exe_q.rf_dest;
+        exe_to_mem_d.exe_result <= exe_result;
+        exe_to_mem_d.mem_wdata  <= decode_to_exe_q.reg_b;
 
     end process;
 
     alu_mux_p : process (all)
     begin
         case ctrl_i.alu_a_sel is
-            when ALU_A_REGA =>      alu_a <= decode_to_exe_q.reg_a;
-            when ALU_A_PC_PLUS_1 => alu_a <= zext(decode_to_exe_q.pc_plus_1, DATA_WIDTH);
-            when ALU_A_SP =>        alu_a <= sp_reg_q;
-            when others =>          alu_a <= (others => '0');
+            when ALU_A_REGA =>       alu_a <= decode_to_exe_q.reg_a;
+            when ALU_A_PC_PLUS_1 =>  alu_a <= zext(decode_to_exe_q.pc_plus_1, DATA_WIDTH);
+            when ALU_A_SP =>         alu_a <= decode_to_exe_q.sp;
+            when others =>           alu_a <= (others => '0');
         end case;
 
         case ctrl_i.alu_b_sel is
@@ -158,7 +158,7 @@ begin
 
     end process;
 
-    exe_result_p : process(all)
+    result_mux_p : process(all)
     begin
         case decode_to_exe_q.dec_instr.kind is
             when IK_LI =>   exe_result <= zext(decode_to_exe_q.dec_instr.imm8, DATA_WIDTH);
@@ -171,19 +171,29 @@ begin
     -- Memory Stage
     mem_stage_p : process (all)
     begin
-        mem_to_writeback_d           <= MEM_TO_WRITEBACK_RESET;
+        mem_to_writeback_d            <= MEM_TO_WRITEBACK_RESET;
 
-        mem_to_writeback_d.dec_instr <= exe_to_mem_q.dec_instr;
-        mem_to_writeback_d.result    <= exe_to_mem_q.alu_result;
-        mem_to_writeback_d.dest      <= exe_to_mem_q.dest;
-        mem_to_writeback_d.mem_rdata <= dmem_rdata_i;
+        mem_to_writeback_d.dec_instr  <= exe_to_mem_q.dec_instr;
+        mem_to_writeback_d.rf_dest    <= exe_to_mem_q.rf_dest;
+        mem_to_writeback_d.exe_result <= exe_to_mem_q.exe_result;
+        mem_to_writeback_d.mem_rdata  <= dmem_rdata_i;
+
+    end process;
+    
+    addr_mux_p : process (all)
+    begin
+        case ctrl_i.dmem_addr_sel is
+            when DMEM_ADDR_EXE =>   dmem_addr_o <= exe_to_mem_q.exe_result;
+            when DMEM_ADDR_RET =>   dmem_addr_o <= exe_to_mem_q.sp;
+            when others =>          dmem_addr_o <= (others => '0');
+        end case;
 
     end process;
 
     wdata_mux_p : process (all)
     begin
         case ctrl_i.dmem_wdata_sel is
-            when DMEM_WDATA_REGB =>  dmem_wdata_o <= exe_to_mem_q.reg_b;
+            when DMEM_WDATA_REGB =>  dmem_wdata_o <= exe_to_mem_q.mem_wdata;
             when DMEM_WDATA_PC =>    dmem_wdata_o <= zext(exe_to_mem_q.pc_plus_1, DATA_WIDTH);
             when others =>           dmem_wdata_o <= (others => '0');
         end case;
@@ -199,9 +209,14 @@ begin
     wb_mux_p : process (all)
     begin
         case ctrl_i.wb_sel is
-            when WB_SEL_EXE =>  rf_wdata <= exe_to_mem_q.alu_result;
-            when WB_SEL_MEM =>  rf_wdata <= mem_to_writeback_q.mem_rdata;
-            when others =>      rf_wdata <= (others => '0');
+            when WB_SEL_EXE =>  rf_waddr <= mem_to_writeback_q.rf_dest;
+                                rf_wdata <= mem_to_writeback_q.exe_result;
+
+            when WB_SEL_MEM =>  rf_waddr <= mem_to_writeback_q.rf_dest;
+                                rf_wdata <= mem_to_writeback_q.mem_rdata;
+
+            when others =>      rf_waddr <= (others => '0');
+                                rf_wdata <= (others => '0');
         end case;
 
     end process;
@@ -212,12 +227,12 @@ begin
         pc_reg_d <= pc_reg_q;
 
         case ctrl_i.pc_sel is
-            when PC_SEL_PLUS_1 =>    pc_reg_d <= std_logic_vector(unsigned(pc_reg_q) + 1);
-            when PC_SEL_JMP_ADDR =>  pc_reg_d <= dec_instr.addr11;
-            when PC_SEL_B_ADDR =>    pc_reg_d <= alu_result(INSTR_ADDR_WIDTH-1 downto 0);
-            when PC_SEL_CALL_ADDR => pc_reg_d <= exe_to_mem_q.dec_instr.addr11;
-            when PC_SEL_RET_ADDR =>  pc_reg_d <= dmem_rdata_i(INSTR_ADDR_WIDTH-1 downto 0);
-            when others =>           pc_reg_d <= pc_reg_q;
+            when PC_SEL_PLUS_1 =>       pc_reg_d <= std_logic_vector(unsigned(pc_reg_q) + 1); -- unify PC+1
+            when PC_SEL_JMP_ADDR =>     pc_reg_d <= dec_instr.addr11;
+            when PC_SEL_BRANCH_ADDR =>  pc_reg_d <= alu_result(INSTR_ADDR_WIDTH-1 downto 0);
+            when PC_SEL_CALL_ADDR =>    pc_reg_d <= exe_to_mem_q.dec_instr.addr11;
+            when PC_SEL_RET_ADDR =>     pc_reg_d <= dmem_rdata_i(INSTR_ADDR_WIDTH-1 downto 0);
+            when others =>              pc_reg_d <= pc_reg_q;
         end case;
         
     end process;
@@ -228,9 +243,16 @@ begin
         sp_reg_d <= sp_reg_q;
 
         case ctrl_i.sp_sel is
-            when SP_SEL_EXE_ADDR =>  sp_reg_d <= alu_result;
+            when SP_SEL_EXE_ADDR =>  sp_reg_d <= exe_to_mem_q.exe_result;
             when others =>           sp_reg_d <= sp_reg_q;
         end case;
+        
+    end process;
+
+    -- Flags Register
+    flags_p : process(all)
+    begin
+        flags_reg_d <= alu_flags;
         
     end process;
 

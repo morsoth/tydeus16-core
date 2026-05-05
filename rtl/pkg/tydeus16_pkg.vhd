@@ -152,7 +152,7 @@ package tydeus16_pkg is
         PC_SEL_HOLD,
         PC_SEL_PLUS_1,
         PC_SEL_JMP_ADDR,
-        PC_SEL_B_ADDR,
+        PC_SEL_BRANCH_ADDR,
         PC_SEL_CALL_ADDR,
         PC_SEL_RET_ADDR
     );
@@ -161,6 +161,12 @@ package tydeus16_pkg is
     type sp_sel_t is (
         SP_SEL_HOLD,
         SP_SEL_EXE_ADDR
+    );
+
+    -- Data memory address selection
+    type dmem_addr_sel_t is (
+        DMEM_ADDR_EXE,
+        DMEM_ADDR_RET
     );
 
     -- Data memory data selection
@@ -238,57 +244,62 @@ package tydeus16_pkg is
     type decode_to_exe_t is record
         dec_instr : decoded_instr_t;
         pc_plus_1 : instr_addr_t;
+        sp        : data_addr_t;
         reg_a     : data_t;
         reg_b     : data_t;
-        dest      : reg_idx_t;
+        rf_dest   : reg_idx_t;
     end record;
 
     type exe_to_mem_t is record
         dec_instr  : decoded_instr_t;
         pc_plus_1  : instr_addr_t;
-        reg_b      : data_t;
-        alu_result : data_t;
-        dest       : reg_idx_t;
+        sp         : data_addr_t;
+        rf_dest    : reg_idx_t;
+        exe_result : data_t;
+        mem_wdata  : data_t;
     end record;
 
     type mem_to_writeback_t is record
-        dec_instr : decoded_instr_t;
-        result    : data_t;
-        dest      : reg_idx_t;
-        mem_rdata : data_t;
+        dec_instr  : decoded_instr_t;
+        rf_dest    : reg_idx_t;
+        exe_result : data_t;
+        mem_rdata  : data_t;
     end record;
-
-    constant FETCH_TO_DECODE_RESET : fetch_to_decode_t := (
-        instr => (others => '0'),
-        pc_plus_1 => (others => '0')
-    );
-
-    constant DECODE_TO_EXE_RESET : decode_to_exe_t := (
-        dec_instr => DECODED_INSTR_RESET,
-        pc_plus_1 => (others => '0'),
-        reg_a     => (others => '0'),
-        reg_b     => (others => '0'),
-        dest      => (others => '0')
-    );
-
-    constant EXE_TO_MEM_RESET : exe_to_mem_t := (
-        dec_instr  => DECODED_INSTR_RESET,
-        pc_plus_1 => (others => '0'),
-        reg_b      => (others => '0'),
-        alu_result => (others => '0'),
-        dest       => (others => '0')
-    );
-
-    constant MEM_TO_WRITEBACK_RESET : mem_to_writeback_t := (
-        dec_instr => DECODED_INSTR_RESET,
-        result    => (others => '0'),
-        dest      => (others => '0'),
-        mem_rdata => (others => '0')
-    );
 
     constant PC_RESET    : instr_addr_t := (others => '0');
     constant SP_RESET    : data_addr_t  := (others => '1');
     constant FLAGS_RESET : flags_t      := (others => '0');
+
+    constant FETCH_TO_DECODE_RESET : fetch_to_decode_t := (
+        instr     => (others => '0'),
+        pc_plus_1 => PC_RESET
+    );
+
+    constant DECODE_TO_EXE_RESET : decode_to_exe_t := (
+        dec_instr => DECODED_INSTR_RESET,
+        pc_plus_1 => PC_RESET,
+        sp        => SP_RESET,
+        reg_a     => (others => '0'),
+        reg_b     => (others => '0'),
+        rf_dest   => (others => '0')
+    );
+
+    constant EXE_TO_MEM_RESET : exe_to_mem_t := (
+        dec_instr  => DECODED_INSTR_RESET,
+        pc_plus_1  => PC_RESET,
+        sp         => SP_RESET,
+        rf_dest    => (others => '0'),
+        exe_result => (others => '0'),
+        mem_wdata  => (others => '0')
+    );
+
+    constant MEM_TO_WRITEBACK_RESET : mem_to_writeback_t := (
+        dec_instr => DECODED_INSTR_RESET,
+        rf_dest   => (others => '0'),
+        exe_result => (others => '0'),
+        mem_rdata => (others => '0')
+    );
+
 
 
     -- Control unit signals
@@ -311,6 +322,7 @@ package tydeus16_pkg is
         alu_a_sel           : alu_a_sel_t;
         alu_b_sel           : alu_b_sel_t;
 
+        dmem_addr_sel       : dmem_addr_sel_t;
         dmem_wdata_sel      : dmem_wdata_sel_t;
         dmem_we             : std_logic;
 
@@ -336,6 +348,7 @@ package tydeus16_pkg is
         alu_a_sel           => ALU_A_REGA,
         alu_b_sel           => ALU_B_REGB,
 
+        dmem_addr_sel       => DMEM_ADDR_EXE,
         dmem_wdata_sel      => DMEM_WDATA_REGB,
         dmem_we             => '0',
 
