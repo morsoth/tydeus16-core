@@ -118,7 +118,6 @@ package tydeus16_pkg is
     -- ALU operations
     type alu_op_t is (
         ALU_NOP,
-        ALU_PASS_B,
         ALU_ADD,
         ALU_SUB,
         ALU_AND,
@@ -127,7 +126,8 @@ package tydeus16_pkg is
         ALU_NOT,
         ALU_SLL,
         ALU_SRL,
-        ALU_SRA
+        ALU_SRA,
+        ALU_PASS_A
     );
 
     -- ALU input A selection

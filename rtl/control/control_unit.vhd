@@ -148,7 +148,7 @@ begin
                 case decode_to_exe_i.dec_instr.kind is
                     -- Arithmetic
                     when IK_MOV =>
-                        ctrl_o.alu_op   <= ALU_PASS_B;
+                        ctrl_o.alu_op   <= ALU_PASS_A;
 
                     when IK_ADD =>
                         ctrl_o.alu_op   <= ALU_ADD;
