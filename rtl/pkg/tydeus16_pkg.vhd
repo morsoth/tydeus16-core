@@ -45,7 +45,7 @@ package tydeus16_pkg is
 
     subtype flags_t      is std_logic_vector(FLAGS_WIDTH-1 downto 0);
 
-    -- Flags indices
+    -- Flags
     constant FLAG_Z : natural := 0;
     constant FLAG_C : natural := 1;
     constant FLAG_N : natural := 2;
@@ -86,7 +86,7 @@ package tydeus16_pkg is
     constant FUNC_XOR : func_t := "10";
     constant FUNC_NOT : func_t := "11";
 
-    -- Instruction format kind
+    -- Instruction format
     type instr_format_t is (
         FMT_NOOP,
         FMT_RRR,
@@ -100,7 +100,7 @@ package tydeus16_pkg is
         FMT_UNKNOWN
     );
 
-    -- Instruction semantic kind
+    -- Instruction kind
     type instr_kind_t is (
         IK_NOP,
         IK_MOV, IK_ADD, IK_SUB, IK_CMP,
@@ -127,7 +127,7 @@ package tydeus16_pkg is
         ALU_SLL,
         ALU_SRL,
         ALU_SRA,
-        ALU_PASS_A
+        ALU_PASS_B
     );
 
     -- ALU input A selection
@@ -161,6 +161,13 @@ package tydeus16_pkg is
     type sp_sel_t is (
         SP_SEL_HOLD,
         SP_SEL_EXE_ADDR
+    );
+
+    -- Execute result selection
+    type exe_result_sel_t is (
+        EXE_RESULT_ALU,
+        EXE_RESULT_LI,
+        EXE_RESULT_LIH
     );
 
     -- Data memory address selection
@@ -203,9 +210,6 @@ package tydeus16_pkg is
         src_a  : reg_idx_t;
         src_b  : reg_idx_t;
 
-        use_src_a : std_logic;
-        use_src_b : std_logic;
-
         imm8   : imm8_t;
         imm4   : imm4_t;
         off5   : off5_t;
@@ -224,9 +228,6 @@ package tydeus16_pkg is
         dest      => (others => '0'),
         src_a     => (others => '0'),
         src_b     => (others => '0'),
-
-        use_src_a => '0',
-        use_src_b => '0',
 
         imm8      => (others => '0'),
         imm4      => (others => '0'),
@@ -254,9 +255,9 @@ package tydeus16_pkg is
         dec_instr  : decoded_instr_t;
         pc_plus_1  : instr_addr_t;
         sp         : data_addr_t;
+        reg_b      : data_t;
         rf_dest    : reg_idx_t;
         exe_result : data_t;
-        mem_wdata  : data_t;
     end record;
 
     type mem_to_writeback_t is record
@@ -288,9 +289,9 @@ package tydeus16_pkg is
         dec_instr  => DECODED_INSTR_RESET,
         pc_plus_1  => PC_RESET,
         sp         => SP_RESET,
+        reg_b      => (others => '0'),
         rf_dest    => (others => '0'),
-        exe_result => (others => '0'),
-        mem_wdata  => (others => '0')
+        exe_result => (others => '0')
     );
 
     constant MEM_TO_WRITEBACK_RESET : mem_to_writeback_t := (
@@ -322,6 +323,8 @@ package tydeus16_pkg is
         alu_a_sel           : alu_a_sel_t;
         alu_b_sel           : alu_b_sel_t;
 
+        exe_result_sel      : exe_result_sel_t;
+
         dmem_addr_sel       : dmem_addr_sel_t;
         dmem_wdata_sel      : dmem_wdata_sel_t;
         dmem_we             : std_logic;
@@ -347,6 +350,8 @@ package tydeus16_pkg is
         alu_op              => ALU_NOP,
         alu_a_sel           => ALU_A_REGA,
         alu_b_sel           => ALU_B_REGB,
+
+        exe_result_sel      => EXE_RESULT_ALU,
 
         dmem_addr_sel       => DMEM_ADDR_EXE,
         dmem_wdata_sel      => DMEM_WDATA_REGB,

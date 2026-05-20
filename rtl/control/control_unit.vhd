@@ -116,6 +116,7 @@ begin
         case state_q is
             when ST_FETCH =>
                 ctrl_o.fetch_to_decode_we <= '1';
+                
                 ctrl_o.pc_we              <= '1';
                 ctrl_o.pc_sel             <= PC_SEL_PLUS_1;
 
@@ -148,7 +149,7 @@ begin
                 case decode_to_exe_i.dec_instr.kind is
                     -- Arithmetic
                     when IK_MOV =>
-                        ctrl_o.alu_op   <= ALU_PASS_A;
+                        ctrl_o.alu_op   <= ALU_PASS_B;
 
                     when IK_ADD =>
                         ctrl_o.alu_op   <= ALU_ADD;
@@ -198,6 +199,13 @@ begin
                     when IK_NOT =>
                         ctrl_o.alu_op  <= ALU_NOT;
                         ctrl_o.flags_we <= '1';
+
+                    -- Load integers
+                    when IK_LI =>
+                        ctrl_o.exe_result_sel <= EXE_RESULT_LI;
+
+                    when IK_LIH =>
+                        ctrl_o.exe_result_sel <= EXE_RESULT_LIH;
 
                     -- Shifts
                     when IK_SLL =>

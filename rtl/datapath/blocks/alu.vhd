@@ -63,7 +63,7 @@ begin
                 res_v := a_i xor b_i;
 
             when ALU_NOT =>
-                res_v := not a_i;
+                res_v := not b_i;
 
             when ALU_SLL =>
                 res_v := std_logic_vector(shift_left(unsigned(a_i), to_integer(unsigned(b_i))));
@@ -74,8 +74,8 @@ begin
             when ALU_SRA =>
                 res_v := std_logic_vector(shift_right(signed(a_i), to_integer(unsigned(b_i))));
 
-            when ALU_PASS_A =>
-                res_v := a_i;
+            when ALU_PASS_B =>
+                res_v := b_i;
 
             when others =>
                 null;

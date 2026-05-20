@@ -59,7 +59,6 @@ architecture rtl of datapath is
 
     signal exe_result : data_t;
 
-
 begin
     -- Decoder
     u_decoder : entity work.decoder
@@ -133,7 +132,7 @@ begin
         exe_to_mem_d.sp         <= decode_to_exe_q.sp;
         exe_to_mem_d.rf_dest    <= decode_to_exe_q.rf_dest;
         exe_to_mem_d.exe_result <= exe_result;
-        exe_to_mem_d.mem_wdata  <= decode_to_exe_q.reg_b;
+        exe_to_mem_d.reg_b      <= decode_to_exe_q.reg_b;
 
     end process;
 
@@ -158,12 +157,13 @@ begin
 
     end process;
 
-    result_mux_p : process(all)
+    exe_result_mux_p : process(all)
     begin
-        case decode_to_exe_q.dec_instr.kind is
-            when IK_LI =>   exe_result <= zext(decode_to_exe_q.dec_instr.imm8, DATA_WIDTH);
-            when IK_LIH =>  exe_result <= decode_to_exe_q.dec_instr.imm8 & decode_to_exe_q.reg_a(7 downto 0);
-            when others =>  exe_result <= alu_result;
+        case ctrl_i.exe_result_sel is
+            when EXE_RESULT_ALU =>   exe_result <= alu_result;
+            when EXE_RESULT_LI =>    exe_result <= zext(decode_to_exe_q.dec_instr.imm8, DATA_WIDTH);
+            when EXE_RESULT_LIH =>   exe_result <= decode_to_exe_q.dec_instr.imm8 & decode_to_exe_q.reg_a(7 downto 0); 
+            when others =>           exe_result <= (others => '0');
         end case;
 
     end process;
@@ -193,7 +193,7 @@ begin
     wdata_mux_p : process (all)
     begin
         case ctrl_i.dmem_wdata_sel is
-            when DMEM_WDATA_REGB =>  dmem_wdata_o <= exe_to_mem_q.mem_wdata;
+            when DMEM_WDATA_REGB =>  dmem_wdata_o <= exe_to_mem_q.reg_b;
             when DMEM_WDATA_PC =>    dmem_wdata_o <= zext(exe_to_mem_q.pc_plus_1, DATA_WIDTH);
             when others =>           dmem_wdata_o <= (others => '0');
         end case;
@@ -203,20 +203,15 @@ begin
     -- Write-back Stage
     writeback_stage_p : process (all)
     begin
-
+        rf_waddr <= mem_to_writeback_q.rf_dest;
     end process;
 
     wb_mux_p : process (all)
     begin
         case ctrl_i.wb_sel is
-            when WB_SEL_EXE =>  rf_waddr <= mem_to_writeback_q.rf_dest;
-                                rf_wdata <= mem_to_writeback_q.exe_result;
-
-            when WB_SEL_MEM =>  rf_waddr <= mem_to_writeback_q.rf_dest;
-                                rf_wdata <= mem_to_writeback_q.mem_rdata;
-
-            when others =>      rf_waddr <= (others => '0');
-                                rf_wdata <= (others => '0');
+            when WB_SEL_EXE =>  rf_wdata <= mem_to_writeback_q.exe_result;
+            when WB_SEL_MEM =>  rf_wdata <= mem_to_writeback_q.mem_rdata;
+            when others =>      rf_wdata <= (others => '0');
         end case;
 
     end process;
