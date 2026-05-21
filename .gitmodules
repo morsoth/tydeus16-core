@@ -1,0 +1,3 @@
+[submodule "isa/athenisa"]
+	path = isa/athenisa
+	url = https://github.com/morsoth/athenisa.git
