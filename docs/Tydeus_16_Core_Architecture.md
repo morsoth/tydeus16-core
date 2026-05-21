@@ -1,10 +1,6 @@
-# Tydeus-16 Core Microarchitecture
+# Tydeus-16 Core Architecture
 
-Version: v0.1  
-Implemented ISA: AthenISA v0.1  
-Status: Draft
-
-## 1. Overview
+###### Version: 0.1
 
 Tydeus-16 is a 16-bit VHDL processor core that implements AthenISA.
 The core uses a multicycle, non-pipelined microarchitecture with separate instruction and data
@@ -14,20 +10,18 @@ This document describes implementation details of the Tydeus-16 core. Programmer
 architecture details such as registers, instructions, opcodes, and memory semantics are defined
 in the AthenISA specification.
 
-## 2. Implementation Summary
+## 1. Goal
+???
 
-| Property | Value |
-| --- | --- |
-| Core name | Tydeus-16 |
-| ISA | AthenISA v0.1 |
-| Data path width | 16 bits |
-| Instruction width | 16 bits |
-| Clocking model | Single clock |
-| Control unit | Multicycle |
-| Pipeline | None |
-| Instruction memory | Separate from data memory |
-| Data memory | Separate from instruction memory |
-| Interrupt controller | Not present in v0.1 |
+## 2. Specifications
+
+- Data width: 16 bits
+- Instruction width: 16 bits
+- General-purpose registers: 7
+- Multi-cycle
+- Separeted instruction and data memories
+- Single clock
+- No interrupts
 
 ## 3. Architectural State Implemented by the Core
 
