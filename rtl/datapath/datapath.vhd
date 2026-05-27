@@ -63,7 +63,7 @@ begin
     -- Decoder
     u_decoder : entity work.decoder
         port map (
-            instr_i     => fetch_to_decode_q.instr,
+            instr_i     => imem_rdata_i,
             dec_instr_o => dec_instr
         );
 
@@ -103,7 +103,7 @@ begin
     begin
         fetch_to_decode_d           <= FETCH_TO_DECODE_RESET;
 
-        fetch_to_decode_d.instr     <= imem_rdata_i;
+        fetch_to_decode_d.pc        <= pc_reg_q;
         fetch_to_decode_d.pc_plus_1 <= std_logic_vector(unsigned(pc_reg_q) + 1);
 
     end process;
@@ -176,7 +176,6 @@ begin
         mem_to_writeback_d.dec_instr  <= exe_to_mem_q.dec_instr;
         mem_to_writeback_d.rf_dest    <= exe_to_mem_q.rf_dest;
         mem_to_writeback_d.exe_result <= exe_to_mem_q.exe_result;
-        mem_to_writeback_d.mem_rdata  <= dmem_rdata_i;
 
     end process;
     
@@ -204,13 +203,14 @@ begin
     writeback_stage_p : process (all)
     begin
         rf_waddr <= mem_to_writeback_q.rf_dest;
+        
     end process;
 
     wb_mux_p : process (all)
     begin
         case ctrl_i.wb_sel is
             when WB_SEL_EXE =>  rf_wdata <= mem_to_writeback_q.exe_result;
-            when WB_SEL_MEM =>  rf_wdata <= mem_to_writeback_q.mem_rdata;
+            when WB_SEL_MEM =>  rf_wdata <= dmem_rdata_i;
             when others =>      rf_wdata <= (others => '0');
         end case;
 

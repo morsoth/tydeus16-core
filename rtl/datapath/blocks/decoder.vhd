@@ -44,6 +44,11 @@ begin
                     when FUNC_CMP =>
                         dec_instr.kind   := IK_CMP;
                         dec_instr.format := FMT_RR;
+
+                    when others =>
+                        dec_instr.kind   := IK_INVALID;
+                        dec_instr.format := FMT_UNKNOWN;
+
                 end case;
 
             when OP_LOGIC =>
@@ -63,6 +68,11 @@ begin
                     when FUNC_NOT =>
                         dec_instr.kind   := IK_NOT;
                         dec_instr.format := FMT_RR;
+
+                    when others =>
+                        dec_instr.kind   := IK_INVALID;
+                        dec_instr.format := FMT_UNKNOWN;
+                        
                 end case;
 
             when OP_LI =>

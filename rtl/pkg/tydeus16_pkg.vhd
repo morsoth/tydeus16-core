@@ -15,8 +15,8 @@ package tydeus16_pkg is
 
     constant FLAGS_WIDTH      : natural := 4;
 
-    constant INSTR_MEM_SIZE   : natural := 2048;
-    constant DATA_MEM_SIZE    : natural := 65536;
+    constant INSTR_MEM_SIZE   : natural := (2 ** INSTR_ADDR_WIDTH);
+    constant DATA_MEM_SIZE    : natural := (2 ** DATA_ADDR_WIDTH);
 
     constant IMM8_WIDTH       : natural := 8;
     constant IMM4_WIDTH       : natural := 4;
@@ -194,7 +194,8 @@ package tydeus16_pkg is
         ST_DECODE,
         ST_EXECUTE,
         ST_MEMORY,
-        ST_WRITEBACK
+        ST_WRITEBACK,
+        ST_TRAP
     );
 
     -- Decoded instruction
@@ -238,7 +239,7 @@ package tydeus16_pkg is
 
     -- Inter-stage struct
     type fetch_to_decode_t is record
-        instr     : instr_t;
+        pc        : instr_addr_t;
         pc_plus_1 : instr_addr_t;
     end record;
 
@@ -264,15 +265,14 @@ package tydeus16_pkg is
         dec_instr  : decoded_instr_t;
         rf_dest    : reg_idx_t;
         exe_result : data_t;
-        mem_rdata  : data_t;
     end record;
 
     constant PC_RESET    : instr_addr_t := (others => '0');
-    constant SP_RESET    : data_addr_t  := (others => '1');
+    constant SP_RESET    : data_addr_t  := (others => '0');
     constant FLAGS_RESET : flags_t      := (others => '0');
 
     constant FETCH_TO_DECODE_RESET : fetch_to_decode_t := (
-        instr     => (others => '0'),
+        pc        => PC_RESET,
         pc_plus_1 => PC_RESET
     );
 
@@ -297,11 +297,28 @@ package tydeus16_pkg is
     constant MEM_TO_WRITEBACK_RESET : mem_to_writeback_t := (
         dec_instr => DECODED_INSTR_RESET,
         rf_dest   => (others => '0'),
-        exe_result => (others => '0'),
-        mem_rdata => (others => '0')
+        exe_result => (others => '0')
     );
 
+    -- Exception causes
+    type exception_cause_t is (
+        EX_NONE,
+        EX_ILLEGAL_INSTR,
+        EX_STACK_UNDERFLOW
+    );
 
+    -- Exception
+    type exception_t is record
+        valid  : std_logic;
+        origin : instr_addr_t;
+        cause  : exception_cause_t;
+    end record;
+
+    constant EXCEPTION_RESET : exception_t := (
+        valid  => '0',
+        origin => (others => '0'),
+        cause  => EX_NONE
+    );
 
     -- Control unit signals
     type ctrl_signals_t is record

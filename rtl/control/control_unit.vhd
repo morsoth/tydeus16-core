@@ -73,6 +73,9 @@ begin
 
                     when IK_JMP =>
                         state_d <= ST_FETCH;
+
+                    when IK_INVALID =>
+                        state_d <= ST_FETCH;
                         
                     when others =>
                         state_d <= ST_EXECUTE;
@@ -92,7 +95,7 @@ begin
 
             when ST_MEMORY =>
                 case exe_to_mem_i.dec_instr.kind is
-                    when IK_STORE | IK_CALL | IK_RET =>
+                    when IK_STORE | IK_CALL =>
                         state_d <= ST_FETCH;
 
                     when others =>
@@ -134,6 +137,10 @@ begin
 
                         ctrl_o.pc_we  <= '1';
                         ctrl_o.pc_sel <= PC_SEL_JMP_ADDR;
+
+                    -- INVALID
+                    when IK_INVALID =>
+                        ctrl_o.decode_to_exe_we <= '0';
 
                     when others => null;
                 end case;
@@ -277,16 +284,8 @@ begin
 
                     -- RET
                     when IK_RET =>
-                        ctrl_o.mem_to_writeback_we <= '0';
-
                         ctrl_o.dmem_addr_sel  <= DMEM_ADDR_RET;
                         ctrl_o.dmem_we        <= '0';
-
-                        ctrl_o.pc_we  <= '1';
-                        ctrl_o.pc_sel <= PC_SEL_RET_ADDR;
-
-                        ctrl_o.sp_we  <= '1';
-                        ctrl_o.sp_sel <= SP_SEL_EXE_ADDR;
 
                     -- LOAD
                     when IK_LOAD =>
@@ -320,6 +319,14 @@ begin
                     when IK_LOAD =>
                         ctrl_o.regfile_we <= '1';
                         ctrl_o.wb_sel     <= WB_SEL_MEM;
+
+                    -- RET
+                    when IK_RET =>
+                        ctrl_o.pc_we  <= '1';
+                        ctrl_o.pc_sel <= PC_SEL_RET_ADDR;
+
+                        ctrl_o.sp_we  <= '1';
+                        ctrl_o.sp_sel <= SP_SEL_EXE_ADDR;
 
                     when others => null;
                 end case;
