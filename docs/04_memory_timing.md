@@ -106,6 +106,9 @@ Write-back:
 `RET` uses Write-back because the return address is not available until one cycle after the
 Memory-stage read address is issued.
 
+If `RET` is decoded while `SP = SP_RESET`, the control unit raises `EX_STACK_UNDERFLOW` in Decode
+and enters `ST_TRAP`. In that case no data memory read is issued.
+
 ## Why This Model
 
 This model is friendlier to FPGA block RAM inference than zero-cycle combinational memories.

@@ -12,6 +12,7 @@ Stage names:
 | `E` | `ST_EXECUTE` |
 | `M` | `ST_MEMORY` |
 | `W` | `ST_WRITEBACK` |
+| `T` | `ST_TRAP` |
 
 ## Stage Usage Table
 
@@ -19,6 +20,8 @@ Stage names:
 | --- | --- |
 | `NOP` | `F -> D` |
 | `JMP` | `F -> D` |
+| Invalid instruction | `F -> D -> T` |
+| `RET` with empty stack | `F -> D -> T` |
 | `CMP`, `CMPI` | `F -> D -> E` |
 | Conditional branches | `F -> D -> E` |
 | `STORE` | `F -> D -> E -> M` |
@@ -48,6 +51,8 @@ D:
 ```
 
 `JMP` is resolved in Decode because its target is encoded directly in the instruction.
+Invalid instructions and empty-stack `RET` are also resolved in Decode and enter `ST_TRAP`
+without reaching Execute.
 
 ## Execute
 
@@ -148,3 +153,17 @@ F -> D -> E -> M -> W
 
 Execute computes `SP + 1`. Memory issues a read from the old stack address. Write-back loads
 `PC` from `dmem_rdata_i` and commits the new `SP`.
+
+If `SP = SP_RESET` in Decode, `RET` does not follow this normal path. The control unit raises
+`EX_STACK_UNDERFLOW` and enters `ST_TRAP`.
+
+### Invalid Instruction
+
+Path:
+
+```text
+F -> D -> T
+```
+
+If the decoder produces `IK_INVALID`, the control unit raises `EX_ILLEGAL_INSTR`. The instruction
+does not enter Execute and no architectural state is written.

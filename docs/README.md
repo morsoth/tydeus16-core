@@ -10,5 +10,6 @@ Start here:
 - [Control unit](03_control_unit.md)
 - [Memory timing](04_memory_timing.md)
 - [Instruction flow](05_instruction_flow.md)
+- [Exceptions](06_exceptions.md)
 
 The AthenISA programmer-visible ISA documentation lives under [`../isa/athenisa`](../isa/athenisa).

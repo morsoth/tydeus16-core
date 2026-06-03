@@ -79,19 +79,55 @@ The package defines the internal datapath control enums:
 
 Keeping these as enums avoids magic control vectors and makes the control unit easier to read.
 
+## FSM States
+
+`state_t` names the control-unit states:
+
+| State | Purpose |
+| --- | --- |
+| `ST_FETCH` | Issue instruction memory address and advance `PC`. |
+| `ST_DECODE` | Consume instruction read data and decode the instruction. |
+| `ST_EXECUTE` | Run ALU work, branches, address calculations, and flag updates. |
+| `ST_MEMORY` | Issue data memory access or transfer execute metadata. |
+| `ST_WRITEBACK` | Commit register, `PC`, or `SP` updates that need Write-back. |
+| `ST_TRAP` | Hold the core after an exception. |
+
 ## Stage Records
 
 The multicycle core passes state through records:
 
 | Record | Purpose |
 | --- | --- |
-| `fetch_to_decode_t` | Carries `PC + 1` from Fetch to Decode. |
+| `fetch_to_decode_t` | Carries the fetched instruction `PC` and `PC + 1` from Fetch to Decode. |
 | `decode_to_exe_t` | Carries decoded instruction, source operands, destination, `PC + 1`, and `SP`. |
 | `exe_to_mem_t` | Carries execute result, store data, destination, instruction metadata, and stack context. |
 | `mem_to_writeback_t` | Carries instruction metadata, destination, and execute result into Write-back. |
 
 Data memory read data is not stored in `mem_to_writeback_t` in the current synchronous memory
 model. `LOAD` and `RET` consume `dmem_rdata_i` directly in Write-back.
+
+`fetch_to_decode_t.pc` is used as the exception origin when the control unit detects a Decode-stage
+exception after the architectural `PC` has already advanced.
+
+## Exceptions
+
+The package defines `exception_cause_t` and `exception_t`.
+
+| Cause | Meaning |
+| --- | --- |
+| `EX_NONE` | No exception. |
+| `EX_ILLEGAL_INSTR` | Invalid or reserved instruction encoding. |
+| `EX_STACK_UNDERFLOW` | `RET` executed while the stack is empty. |
+
+`exception_t` contains:
+
+| Field | Meaning |
+| --- | --- |
+| `valid` | Exception has been taken. |
+| `origin` | PC of the faulting instruction. |
+| `cause` | Exception cause. |
+
+`EXCEPTION_RESET` clears the exception record.
 
 ## Control Record
 

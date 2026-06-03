@@ -8,20 +8,28 @@ entity control_unit is
         clk_i   : in  std_logic;
         rst_i   : in  std_logic;
 
+        -- Control signals
         ctrl_o  : out ctrl_signals_t;
 
+        -- Stage registers
         fetch_to_decode_i  : in fetch_to_decode_t;
         decode_to_exe_i    : in decode_to_exe_t;
         exe_to_mem_i       : in exe_to_mem_t;
         mem_to_writeback_i : in mem_to_writeback_t;
 
+        -- Additional signals
         dec_instr_i        : in decoded_instr_t;
-        flags_i            : in flags_t
+        flags_i            : in flags_t;
+        sp_empty_i         : in std_logic;
+
+        -- Exception interface
+        exception_o        : out exception_t
     );
 end entity control_unit;
 
 architecture rtl of control_unit is
-    signal state_d, state_q : state_t;
+    signal state_d, state_q         : state_t;
+    signal exception_d, exception_q : exception_t;
 
     function branch_taken(kind : instr_kind_t; flags : flags_t) return std_logic is
         variable z : std_logic;
@@ -49,9 +57,11 @@ begin
     begin
         if rising_edge(clk_i) then
             if rst_i = '1' then
-                state_q <= ST_FETCH;
+                state_q     <= ST_FETCH;
+                exception_q <= EXCEPTION_RESET;
             else
-                state_q <= state_d;
+                state_q     <= state_d;
+                exception_q <= exception_d;
             end if;
         end if;
 
@@ -60,7 +70,8 @@ begin
     -- Next-state logic
     next_state_p : process(all)
     begin
-        state_d <= state_q;
+        state_d     <= state_q;
+        exception_d <= exception_q;
 
         case state_q is
             when ST_FETCH =>
@@ -75,8 +86,23 @@ begin
                         state_d <= ST_FETCH;
 
                     when IK_INVALID =>
-                        state_d <= ST_FETCH;
-                        
+                        state_d <= ST_TRAP;
+
+                        exception_d.valid  <= '1';
+                        exception_d.origin <= fetch_to_decode_i.pc;
+                        exception_d.cause  <= EX_ILLEGAL_INSTR;
+
+                    when IK_RET =>
+                        if sp_empty_i = '1' then
+                            state_d <= ST_TRAP;
+
+                            exception_d.valid  <= '1';
+                            exception_d.origin <= fetch_to_decode_i.pc;
+                            exception_d.cause  <= EX_STACK_UNDERFLOW;
+                        else
+                            state_d <= ST_EXECUTE;
+                        end if;
+
                     when others =>
                         state_d <= ST_EXECUTE;
                 end case;
@@ -104,6 +130,9 @@ begin
 
             when ST_WRITEBACK =>
                 state_d <= ST_FETCH;
+
+            when ST_TRAP =>
+                state_d <= ST_TRAP;
 
             when others =>
                 state_d <= ST_FETCH;
@@ -141,6 +170,12 @@ begin
                     -- INVALID
                     when IK_INVALID =>
                         ctrl_o.decode_to_exe_we <= '0';
+
+                    -- RET with empty stack
+                    when IK_RET =>
+                        if sp_empty_i = '1' then
+                            ctrl_o.decode_to_exe_we <= '0';
+                        end if;
 
                     when others => null;
                 end case;
@@ -336,5 +371,7 @@ begin
         end case;
 
     end process;
+
+    exception_o <= exception_q;
 
 end architecture rtl;

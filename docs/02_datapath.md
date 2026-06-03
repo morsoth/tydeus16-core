@@ -30,6 +30,7 @@ Control interface:
 | `*_o` stage records | out | Current stage-register contents for the control unit. |
 | `dec_instr_o` | out | Current decoded instruction from `imem_rdata_i`. |
 | `flags_o` | out | Current committed flags register. |
+| `sp_empty_o` | out | Asserted when `SP = SP_RESET`, used for stack-underflow detection. |
 
 ## Architectural Registers
 
@@ -54,10 +55,14 @@ Decode -> consume IMEM read data
 The Decode stage latches:
 
 - decoded instruction metadata
+- fetched instruction `PC`
 - `PC + 1`
 - current `SP`
 - source register values
 - destination register index
+
+The fetched instruction `PC` is carried separately because the architectural `PC` advances during
+Fetch. If Decode detects an exception, this preserved value is reported as the exception origin.
 
 ## Execute Path
 

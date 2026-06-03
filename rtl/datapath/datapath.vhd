@@ -26,7 +26,8 @@ entity datapath is
         exe_to_mem_o       : out exe_to_mem_t;
         mem_to_writeback_o : out mem_to_writeback_t;
         dec_instr_o        : out decoded_instr_t;
-        flags_o            : out flags_t
+        flags_o            : out flags_t;
+        sp_empty_o         : out std_logic
     );
 end entity datapath;
 
@@ -305,5 +306,6 @@ begin
 
     dec_instr_o        <= dec_instr;
     flags_o            <= flags_reg_q;
+    sp_empty_o         <= '1' when sp_reg_q = SP_RESET else '0';
 
 end architecture rtl;
