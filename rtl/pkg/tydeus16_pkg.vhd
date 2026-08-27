@@ -10,13 +10,13 @@ package tydeus16_pkg is
     constant INSTR_ADDR_WIDTH : natural := 11;
     constant DATA_ADDR_WIDTH  : natural := 16;
 
+    constant INSTR_MEM_SIZE   : natural := (2 ** INSTR_ADDR_WIDTH);
+    constant DATA_MEM_SIZE    : natural := (2 ** DATA_ADDR_WIDTH);
+
     constant REG_COUNT        : natural := 8;
     constant REG_IDX_WIDTH    : natural := 3;
 
     constant FLAGS_WIDTH      : natural := 4;
-
-    constant INSTR_MEM_SIZE   : natural := (2 ** INSTR_ADDR_WIDTH);
-    constant DATA_MEM_SIZE    : natural := (2 ** DATA_ADDR_WIDTH);
 
     constant IMM8_WIDTH       : natural := 8;
     constant IMM4_WIDTH       : natural := 4;
@@ -35,6 +35,8 @@ package tydeus16_pkg is
 
     subtype reg_idx_t    is std_logic_vector(REG_IDX_WIDTH-1 downto 0);
 
+    subtype flags_t      is std_logic_vector(FLAGS_WIDTH-1 downto 0);
+
     subtype imm8_t       is std_logic_vector(IMM8_WIDTH-1 downto 0);
     subtype imm4_t       is std_logic_vector(IMM4_WIDTH-1 downto 0);
     subtype off5_t       is std_logic_vector(OFF5_WIDTH-1 downto 0);
@@ -42,8 +44,6 @@ package tydeus16_pkg is
 
     subtype opcode_t     is std_logic_vector(OPCODE_WIDTH-1 downto 0);
     subtype func_t       is std_logic_vector(FUNC_WIDTH-1 downto 0);
-
-    subtype flags_t      is std_logic_vector(FLAGS_WIDTH-1 downto 0);
 
     -- Flags
     constant FLAG_Z : natural := 0;

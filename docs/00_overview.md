@@ -29,7 +29,7 @@ RTL implements that behavior.
 | --- | --- |
 | Data width | 16 bits |
 | Instruction width | 16 bits |
-| General-purpose registers | 7 plus `R0` zero register |
+| General-purpose registers | 8 (`R0` to `R7`) |
 | Program counter width | 11 bits |
 | Stack pointer width | 16 bits |
 | Flags | `Z`, `C`, `N`, `V` |
@@ -43,8 +43,7 @@ RTL implements that behavior.
 
 The core implements the architectural state defined by AthenISA:
 
-- `R0`, a constant zero register.
-- `R1` through `R7`, seven 16-bit general-purpose registers.
+- `R0` through `R7`, eight independent 16-bit general-purpose registers.
 - `PC`, an 11-bit program counter.
 - `SP`, a 16-bit stack pointer.
 - `FLAGS`, a 4-bit status register containing `Z`, `C`, `N`, and `V`.

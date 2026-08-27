@@ -79,18 +79,18 @@ begin
 
             when ST_DECODE =>
                 case dec_instr_i.kind is
-                    when IK_NOP =>
-                        state_d <= ST_FETCH;
-
-                    when IK_JMP =>
-                        state_d <= ST_FETCH;
-
                     when IK_INVALID =>
                         state_d <= ST_TRAP;
 
                         exception_d.valid  <= '1';
                         exception_d.origin <= fetch_to_decode_i.pc;
                         exception_d.cause  <= EX_ILLEGAL_INSTR;
+
+                    when IK_NOP =>
+                        state_d <= ST_FETCH;
+
+                    when IK_JMP =>
+                        state_d <= ST_FETCH;
 
                     when IK_RET =>
                         if sp_empty_i = '1' then

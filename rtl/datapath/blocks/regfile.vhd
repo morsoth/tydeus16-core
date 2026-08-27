@@ -31,12 +31,10 @@ architecture rtl of regfile is
 
 begin
     -- RegA readings
-    rdata_a_o <= (others => '0') when unsigned(raddr_a_i) = 0
-                else regs(to_integer(unsigned(raddr_a_i)));
+    rdata_a_o <= regs(to_integer(unsigned(raddr_a_i)));
 
     -- RegB readings
-    rdata_b_o <= (others => '0') when unsigned(raddr_b_i) = 0
-                else regs(to_integer(unsigned(raddr_b_i)));
+    rdata_b_o <= regs(to_integer(unsigned(raddr_b_i)));
 
     process(clk_i)
     begin
@@ -49,9 +47,7 @@ begin
 
             -- RegD writtings
             elsif we_i = '1' then
-                if unsigned(waddr_d_i) /= 0 then
-                    regs(to_integer(unsigned(waddr_d_i))) <= wdata_d_i;
-                end if;
+                regs(to_integer(unsigned(waddr_d_i))) <= wdata_d_i;
             end if;
 
         end if;

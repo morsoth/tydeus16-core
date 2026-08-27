@@ -15,6 +15,7 @@ architecture rtl of decoder is
 begin
     decode_p : process (all)
         variable dec_instr : decoded_instr_t;
+        
     begin
         dec_instr     := DECODED_INSTR_RESET;
         dec_instr.raw := instr_i;

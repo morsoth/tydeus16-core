@@ -40,7 +40,7 @@ The datapath owns:
 - `SP`: stack pointer used by `CALL` and `RET`.
 - `FLAGS`: committed status flags.
 
-The register file owns `R0` through `R7`. `R0` is hardwired to zero by the register file.
+The register file owns eight independent 16-bit general-purpose registers, `R0` through `R7`.
 
 ## Decode Path
 

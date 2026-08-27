@@ -12,7 +12,7 @@ integration code.
 | `DATA_WIDTH` | Data word width, 16 bits. |
 | `INSTR_ADDR_WIDTH` | Instruction address width, 11 bits. |
 | `DATA_ADDR_WIDTH` | Data address width, 16 bits. |
-| `REG_COUNT` | Register file entries, including `R0`. |
+| `REG_COUNT` | Register file entries (`R0` through `R7`). |
 | `REG_IDX_WIDTH` | Register index width, 3 bits. |
 | `FLAGS_WIDTH` | Status flag register width, 4 bits. |
 | `INSTR_MEM_SIZE` | Instruction memory depth, 2048 words. |
