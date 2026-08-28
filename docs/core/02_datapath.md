@@ -1,6 +1,6 @@
 # Tydeus-16 Datapath
 
-The datapath is implemented in [`rtl/datapath/datapath.vhd`](../rtl/datapath/datapath.vhd).
+The datapath is implemented in [`rtl/core/datapath/datapath.vhd`](../../rtl/core/datapath/datapath.vhd).
 It contains the architectural registers, stage registers, decoder, register file, ALU, muxes,
 and external memory interfaces.
 

@@ -1,6 +1,6 @@
 # Tydeus-16 Control Unit
 
-The control unit is implemented in [`rtl/control/control_unit.vhd`](../rtl/control/control_unit.vhd).
+The control unit is implemented in [`rtl/core/control/control_unit.vhd`](../../rtl/core/control/control_unit.vhd).
 It is a multicycle FSM that drives the datapath through Fetch, Decode, Execute, Memory, and
 Write-back.
 

@@ -1,6 +1,6 @@
 # Tydeus-16 Core Package
 
-The RTL package is implemented in [`rtl/pkg/tydeus16_pkg.vhd`](../rtl/pkg/tydeus16_pkg.vhd).
+The RTL package is implemented in [`rtl/core/pkg/tydeus16_pkg.vhd`](../../rtl/core/pkg/tydeus16_pkg.vhd).
 It is the shared contract between the decoder, datapath, control unit, and future top-level
 integration code.
 

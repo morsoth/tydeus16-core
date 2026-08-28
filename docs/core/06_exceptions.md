@@ -9,7 +9,7 @@ reset.
 ## Exception Record
 
 Exception information is represented by `exception_t` from
-[`rtl/pkg/tydeus16_pkg.vhd`](../rtl/pkg/tydeus16_pkg.vhd):
+[`rtl/core/pkg/tydeus16_pkg.vhd`](../../rtl/core/pkg/tydeus16_pkg.vhd):
 
 | Field | Meaning |
 | --- | --- |
@@ -105,4 +105,3 @@ Future versions may replace `ST_TRAP` halt behavior with a vectored trap flow su
 ```text
 exception detected -> save context -> PC <- TRAP_VECTOR
 ```
-
